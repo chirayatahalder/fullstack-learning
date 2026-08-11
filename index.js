@@ -27,6 +27,15 @@ function requireAuth(req, res, next) {
   }
 }
 
+function requireRole(role) {
+  return (req, res, next) => {
+    if (req.user.role !== role) {
+      return res.status(403).json({ error: 'Access denied' })
+    }
+    next()
+  }
+}
+
 app.get("/", (req, res) => {
   res.send("Server is running!");
 });
@@ -89,7 +98,7 @@ app.post("/login", async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" },
     );
@@ -103,6 +112,12 @@ app.post("/login", async (req, res) => {
 app.get("/profile", requireAuth, (req, res) => {
   res.json({ message: "This is protected data", user: req.user });
 });
+
+app.get('/admin', requireAuth, requireRole('admin'), (req, res) => {
+  res.json({ message: 'Welcome, admin!' })
+})
+
+
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
